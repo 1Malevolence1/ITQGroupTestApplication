@@ -1,13 +1,16 @@
 package or.my.project.itqgroup.service;
 
 import jakarta.transaction.Transactional;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import or.my.project.itqgroup.dto.DocumentFilter;
 import or.my.project.itqgroup.dto.request.CreateDocumentRequest;
 import or.my.project.itqgroup.dto.request.DocumentIdsReuqest;
 import or.my.project.itqgroup.dto.response.DocumentDtoResponse;
 import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.repository.DocumentRepository;
+import or.my.project.itqgroup.repository.specification.DocumentSpecification;
 import or.my.project.itqgroup.service.mapper.DocumentMapper;
 import or.my.project.itqgroup.util.ApiListResponse;
 import or.my.project.itqgroup.util.CustomSortDescription;
@@ -15,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -46,7 +50,7 @@ public class DocumentService {
         return documentMapper.toDto(documentModel);
     }
 
-    public ApiListResponse<DocumentDtoResponse> getAll(DocumentIdsReuqest request, int page, int size, CustomSortDescription sortDirection) {
+    public ApiListResponse<DocumentDtoResponse> getAll(DocumentFilter filter, List<Long> ids, int page, int size, CustomSortDescription sortDirection) {
 
 
         Sort sort = sortDirection == CustomSortDescription.ASC ? Sort.by("id").ascending() : Sort.by("id").descending();
@@ -54,7 +58,17 @@ public class DocumentService {
         Pageable pageable = PageRequest.of(page, size, sort);
 
 
-        Page<DocumentModel> documentPage = documentRepository.findByIdIn(request.ids(), pageable);
+        Specification<DocumentModel> spec = Specification
+                .where(DocumentSpecification.idIn(ids)
+                .and(DocumentSpecification.authorEquals(filter.author()))
+                .and(DocumentSpecification.statusEquals(filter.status()))
+                .and(DocumentSpecification.createdFrom(filter.createdFrom()))
+                .and(DocumentSpecification.createdTo(filter.createdTo())));
+
+
+        Page<DocumentModel> documentPage =
+                documentRepository.findAll(spec, pageable);
+
 
         return new ApiListResponse<>(documentMapper.toDtoList(documentPage.getContent()), documentPage.getTotalElements());
     }

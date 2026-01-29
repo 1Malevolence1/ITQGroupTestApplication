@@ -8,11 +8,12 @@ import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface DocumentRepository extends JpaRepository<DocumentModel, Long> {
+public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, JpaSpecificationExecutor<DocumentModel> {
 
   //  @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM DocumentModel d WHERE d.id = :id")

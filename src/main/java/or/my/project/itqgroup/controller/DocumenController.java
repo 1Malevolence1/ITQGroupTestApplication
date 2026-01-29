@@ -2,9 +2,10 @@ package or.my.project.itqgroup.controller;
 
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import or.my.project.itqgroup.dto.DocumentFilter;
 import or.my.project.itqgroup.dto.request.CreateDocumentRequest;
 import or.my.project.itqgroup.dto.request.DocumentIdsReuqest;
 import or.my.project.itqgroup.dto.response.DocumentDtoResponse;
@@ -12,7 +13,7 @@ import or.my.project.itqgroup.service.DocumentService;
 import or.my.project.itqgroup.util.ApiListResponse;
 import or.my.project.itqgroup.util.CustomSortDescription;
 import or.my.project.itqgroup.util.DocumentStatus;
-import org.hibernate.query.SortDirection;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,14 +43,41 @@ public class DocumenController {
                 documentService.get(id)
         );
     }
-    @GetMapping
-    public ResponseEntity<ApiListResponse<DocumentDtoResponse>> getAll(
-            @RequestBody DocumentIdsReuqest request,
-            @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size,
-            @RequestParam(defaultValue = "DESC") CustomSortDescription sort) {
-        return ResponseEntity.ok(
-                documentService.getAll(request, page, size ,sort)
+
+    @GetMapping()
+    public ApiListResponse<DocumentDtoResponse> getAll(
+            @RequestParam List<Long> ids,
+
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) DocumentStatus status,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime createdFrom,
+
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime createdTo,
+
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "ASC") CustomSortDescription sort
+    ) {
+
+       DocumentFilter filter = new DocumentFilter(
+                author,
+                status,
+                createdFrom,
+                createdTo
+        );
+
+        return documentService.getAll(
+                filter,
+                ids,
+                page,
+                size,
+                sort
         );
     }
+
 }
