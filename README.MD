@@ -98,6 +98,13 @@ curl -X POST "http://localhost:8080/concurrency-test?documentId=1&threads=10&att
 }
 ```
 
+где:
+
+* successful — успешные операции
+* conflicts — конфликты версий / блокировок
+* errors — ошибки выполнения
+* finalStatus — финальный статус документа
+
 ## Documents API
 
 Базовый путь: /api/v1/documents
@@ -125,16 +132,28 @@ GET /api/v1/documents/{id}
 ```
 curl http://localhost:8080/api/v1/documents/1
 ``` 
-Пример ответа:
+
+Пример ответа: 
 ```
 {
 "id": 1,
-"title": "Test document",
+"uniqueNumber": "DOC-2026-0001",
 "author": "john.doe",
+"title": "Test document",
 "status": "DRAFT",
-"createdAt": "2026-01-29T10:15:30"
+"createdAt": "2026-01-29T10:15:30",
+"updatedAt": "2026-01-29T10:20:10",
+"history": [
+{
+"id": 10,
+"author": "john.doe",
+"timestamp": "2026-01-29T10:15:30",
+"action": "CREATED",
+"comment": "Документ создан"
 }
-``` 
+]
+}
+```
 Получение списка документов
 
 * GET /api/v1/documents
@@ -143,6 +162,27 @@ curl http://localhost:8080/api/v1/documents/1
 ```
 curl "http://localhost:8080/api/v1/documents?ids=1,2,3&author=john.doe&status=DRAFT&page=0&size=10"
 ``` 
+
+Пример ответа:
+```
+{
+"items": [
+{
+"id": 1,
+"uniqueNumber": "DOC-2026-0001",
+"author": "john.doe",
+"title": "Test document",
+"status": "DRAFT",
+"createdAt": "2026-01-29T10:15:30",
+"updatedAt": "2026-01-29T10:20:10",
+"history": []
+}
+],
+"page": 0,
+"size": 10,
+"total": 1
+}
+```
 Отправка документов на согласование
 
 * POST /api/v1/documents/submit
@@ -156,7 +196,20 @@ curl -X POST http://localhost:8080/api/v1/documents/submit \
 "user": "john.doe"
 }'
 ````
-Ответ: возвращает результаты каждого документа
+Пример ответа: 
+
+```
+[
+  {
+    "id": 1,
+    "result": "успешно"
+  },
+  {
+    "id": 2,
+    "result": "конфликт"
+  }
+]
+```
 
 Подтверждение документов
 
@@ -172,4 +225,17 @@ curl -X POST http://localhost:8080/api/v1/documents/approve \
 }'
 ````
 
-Ответ: возвращает результаты каждого документа
+Пример ответа:
+
+````
+[
+  {
+    "id": 3,
+    "result": "успешно"
+  },
+  {
+    "id": 4,
+    "result": "Уже имеет нужный статус"
+  }
+]
+````
