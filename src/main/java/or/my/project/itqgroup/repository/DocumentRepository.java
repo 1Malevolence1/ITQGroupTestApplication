@@ -9,6 +9,7 @@ import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
@@ -27,5 +28,15 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, 
        WHERE d.id IN :ids
        """)
   List<DocumentModel> findAllByIdWithLock(@Param("ids") Collection<Long> ids);
+
+
+  @Query("""
+       SELECT d
+       FROM DocumentModel d
+       WHERE d.status = :status
+       ORDER BY d.id
+       """)
+  List<DocumentModel> findByStatus(@Param("status") DocumentStatus status, Pageable pageable);
+
 
 }

@@ -26,6 +26,8 @@ import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -42,6 +44,13 @@ public class DocumentService {
     private final HistoryService historyService;
     private final ApprovalRegistryService approvalRegistryService;
     private final DocumentMapper documentMapper;
+
+
+    // Я думаю, что можно было бы сделать ещё через Slice. Может это было бы правильнее
+    public List<DocumentModel> fetchBatch(DocumentStatus status, PageRequest pageRequest) {
+        return documentRepository.findByStatus(status, pageRequest);
+    }
+
 
     @Transactional
     public void create(CreateDocumentRequest request) {
@@ -89,40 +98,6 @@ public class DocumentService {
 
     @Transactional
     public List<BatchResponseDto> submitBatch(BatchRequest request) {
-        return processBatch(
-                request,
-                DocumentStatus.DRAFT,
-                DocumentStatus.SUBMITTED,
-                doc -> historyService.save(doc, request.author(), Action.SUBMIT, request.comment())
-        );
-    }
-    @Transactional
-    public List<BatchResponseDto> approveBatch(BatchRequest request) {
-        return processBatch(request,
-                DocumentStatus.SUBMITTED,
-                DocumentStatus.APPROVED,
-                doc -> {
-                    try {
-                        approvalRegistryService.save(doc);
-                        doc.setStatus(DocumentStatus.APPROVED);
-                        historyService.save(doc, request.author(), Action.APPROVE, request.comment());
-                    } catch (Exception e) {
-                        throw new RuntimeException("Ошибка регестрации", e);
-                        /* Так как нет возможность задать уточняющие вопросы,
-                        то напишу в комментариях. Я понимаю, что если при записи в регистр произошла ошибка,
-                        то запись в итсории не появится, а вот что делать, если при сохранении истории
-                         появится ошибка- в тз не указано.
-                         Тут, конечно, можно было добавить логику, которая бы чистила историю и утверждённые документы
-                         */
-                    }
-                });
-    }
-    private List<BatchResponseDto> processBatch(
-            BatchRequest request,
-            DocumentStatus requiredStatus,
-            DocumentStatus targetStatus,
-            Consumer<DocumentModel> action
-    ) {
         List<BatchResponseDto> responses = new ArrayList<>(request.ids().size());
 
         List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
@@ -137,20 +112,60 @@ public class DocumentService {
                 continue;
             }
 
-
-            if (doc.getStatus() == targetStatus) {
+            if (doc.getStatus() == DocumentStatus.SUBMITTED) {
                 responses.add(BatchResponseDto.already(id));
                 continue;
             }
 
-
-            if (doc.getStatus() != requiredStatus) {
+            if (doc.getStatus() != DocumentStatus.DRAFT) {
                 responses.add(BatchResponseDto.conflict(id));
                 continue;
             }
 
             try {
-                action.accept(doc);
+                doc.setStatus(DocumentStatus.SUBMITTED);
+                historyService.save(doc, request.author(), Action.SUBMIT, request.comment());
+                responses.add(BatchResponseDto.success(id));
+            } catch (RuntimeException e) {
+                responses.add(BatchResponseDto.registryError(id));
+            }
+        }
+
+        return responses;
+    }
+
+
+    @Transactional
+    public List<BatchResponseDto> approveBatch(BatchRequest request) {
+        List<BatchResponseDto> responses = new ArrayList<>(request.ids().size());
+
+        List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
+        Map<Long, DocumentModel> docMap = docs.stream()
+                .collect(Collectors.toMap(DocumentModel::getId, d -> d));
+
+        for (Long id : request.ids()) {
+            DocumentModel doc = docMap.get(id);
+
+            if (doc == null) {
+                responses.add(BatchResponseDto.notFound(id));
+                continue;
+            }
+
+            if (doc.getStatus() == DocumentStatus.APPROVED) {
+                responses.add(BatchResponseDto.already(id));
+                continue;
+            }
+
+            if (doc.getStatus() != DocumentStatus.SUBMITTED) {
+                responses.add(BatchResponseDto.conflict(id));
+                continue;
+            }
+
+            try {
+
+                approvalRegistryService.save(doc);
+                doc.setStatus(DocumentStatus.APPROVED);
+                historyService.save(doc, request.author(), Action.APPROVE, request.comment());
                 responses.add(BatchResponseDto.success(id));
             } catch (RuntimeException e) {
                 responses.add(BatchResponseDto.registryError(id));
