@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,12 +29,14 @@ import org.hibernate.annotations.UpdateTimestamp;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class DocumentModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "unique_number", unique = true, nullable = false)
+    @Builder.Default
     private String uniqueNumber = UUID.randomUUID().toString();
 
     @Column(nullable = false)
@@ -44,6 +47,7 @@ public class DocumentModel {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private DocumentStatus status = DocumentStatus.DRAFT;
 
     @Column(name = "created_at", nullable = false)
@@ -54,8 +58,8 @@ public class DocumentModel {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-
     @OneToMany(mappedBy = "document")
+    @Builder.Default
     private List<HistoryModel> histories = new ArrayList<>();
 
     @OneToOne(mappedBy = "document")
