@@ -11,6 +11,7 @@ public record BatchResponseDto(
         SUCCESS("успешно"),
         NOT_FOUND("не найдено"),
         CONFLICT("конфликт"),
+        ALREADY("Уже имеет нужный статус"),
         REGISTRY_ERROR("ошибка регистрации в реестре"),
         ERROR("ошибка");
 
@@ -47,7 +48,12 @@ public record BatchResponseDto(
         return new BatchResponseDto(id, ProcessingResult.REGISTRY_ERROR);
     }
 
+    public static BatchResponseDto already(Long id) {
+        return new BatchResponseDto(id, ProcessingResult.ALREADY);
+    }
+
     public static BatchResponseDto error(Long id, String details) {
         return new BatchResponseDto(id, ProcessingResult.ERROR);
     }
+
 }

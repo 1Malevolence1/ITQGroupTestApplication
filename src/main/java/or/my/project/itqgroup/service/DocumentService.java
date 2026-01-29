@@ -4,6 +4,7 @@ package or.my.project.itqgroup.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +14,7 @@ import or.my.project.itqgroup.dto.request.CreateDocumentRequest;
 import or.my.project.itqgroup.dto.request.DocumentIdsReuqest;
 import or.my.project.itqgroup.dto.response.BatchResponseDto;
 import or.my.project.itqgroup.dto.response.DocumentResponseDto;
+import or.my.project.itqgroup.model.ApprovalRegistryModel;
 import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.repository.DocumentRepository;
 import or.my.project.itqgroup.repository.specification.DocumentSpecification;
@@ -38,6 +40,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final HistoryService historyService;
+    private final ApprovalRegistryService approvalRegistryService;
     private final DocumentMapper documentMapper;
 
     @Transactional
@@ -86,10 +89,43 @@ public class DocumentService {
 
     @Transactional
     public List<BatchResponseDto> submitBatch(BatchRequest request) {
+        return processBatch(
+                request,
+                DocumentStatus.DRAFT,
+                DocumentStatus.SUBMITTED,
+                doc -> historyService.save(doc, request.author(), Action.SUBMIT, request.comment())
+        );
+    }
+    @Transactional
+    public List<BatchResponseDto> approveBatch(BatchRequest request) {
+        return processBatch(request,
+                DocumentStatus.SUBMITTED,
+                DocumentStatus.APPROVED,
+                doc -> {
+                    try {
+                        approvalRegistryService.save(doc);
+                        doc.setStatus(DocumentStatus.APPROVED);
+                        historyService.save(doc, request.author(), Action.APPROVE, request.comment());
+                    } catch (Exception e) {
+                        throw new RuntimeException("Ошибка регестрации", e);
+                        /* Так как нет возможность задать уточняющие вопросы,
+                        то напишу в комментариях. Я понимаю, что если при записи в регистр произошла ошибка,
+                        то запись в итсории не появится, а вот что делать, если при сохранении истории
+                         появится ошибка- в тз не указано.
+                         Тут, конечно, можно было добавить логику, которая бы чистила историю и утверждённые документы
+                         */
+                    }
+                });
+    }
+    private List<BatchResponseDto> processBatch(
+            BatchRequest request,
+            DocumentStatus requiredStatus,
+            DocumentStatus targetStatus,
+            Consumer<DocumentModel> action
+    ) {
         List<BatchResponseDto> responses = new ArrayList<>(request.ids().size());
 
         List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
-
         Map<Long, DocumentModel> docMap = docs.stream()
                 .collect(Collectors.toMap(DocumentModel::getId, d -> d));
 
@@ -101,18 +137,28 @@ public class DocumentService {
                 continue;
             }
 
-            if (doc.getStatus() != DocumentStatus.DRAFT) {
+
+            if (doc.getStatus() == targetStatus) {
+                responses.add(BatchResponseDto.already(id));
+                continue;
+            }
+
+
+            if (doc.getStatus() != requiredStatus) {
                 responses.add(BatchResponseDto.conflict(id));
                 continue;
             }
 
-            doc.setStatus(DocumentStatus.SUBMITTED);
-            historyService.save(doc, request.author(), Action.SUBMIT, request.comment());
-
-            responses.add(BatchResponseDto.success(id));
+            try {
+                action.accept(doc);
+                responses.add(BatchResponseDto.success(id));
+            } catch (RuntimeException e) {
+                responses.add(BatchResponseDto.registryError(id));
+            }
         }
 
         return responses;
     }
+
 }
 

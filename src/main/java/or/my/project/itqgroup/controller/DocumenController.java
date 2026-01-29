@@ -45,6 +45,7 @@ public class DocumenController {
         );
     }
 
+
     @GetMapping()
     public ApiListResponse<DocumentResponseDto> getAll(
             @RequestParam List<Long> ids,
@@ -83,8 +84,12 @@ public class DocumenController {
 
 
     @PostMapping("/submit")
-    public List<BatchResponseDto> submit(@RequestBody BatchRequest request) {
-        return documentService.submitBatch(request);
+    public ResponseEntity<List<BatchResponseDto>> submit(@RequestBody BatchRequest request) {
+        return ResponseEntity.ok(documentService.submitBatch(request));
     }
 
+    @PostMapping("/approve")
+    public ResponseEntity<List<BatchResponseDto>> approve(@RequestBody BatchRequest request) {
+        return ResponseEntity.ok(documentService.approveBatch(request));
+    }
 }
