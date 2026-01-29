@@ -20,13 +20,13 @@ public class BackgroundWorkers {
 
     private final DocumentService documentService;
 
-    @Value("${app.batch-size:100}")
+    @Value("${app.batch-size}")
     private int batchSize;
 
-    @Value("${app.workers.enabled:true}")
+    @Value("${app.workers.enabled}")
     private boolean workersEnabled;
 
-    @Scheduled(fixedRateString = "${app.workers.submit-interval-ms:5000}")
+    @Scheduled(fixedRateString = "${app.workers.submit-interval-ms}")
     public void submitWorker() {
         if (!workersEnabled) return;
 

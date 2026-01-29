@@ -25,7 +25,7 @@ public class DocumentInitializerRunner implements CommandLineRunner {
     @Value("${app.documents.default-author:SYSTEM}")
     private String defaultAuthor;
 
-    @Value("${app.documents.default-title-prefix:Документ}")
+    @Value("${app.documents.default-title-prefix:Document}")
     private String defaultTitlePrefix;
 
     @Override

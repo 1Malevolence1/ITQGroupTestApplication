@@ -66,10 +66,13 @@ public class DocumentService {
 
     @Transactional(readOnly = true)
     public DocumentResponseDto get(Long id) {
-        DocumentModel documentModel = documentRepository.findById(id).orElseThrow(
+        return documentMapper.toDto(getById(id));
+    }
+
+    public DocumentModel getById(Long id){
+       return documentRepository.findById(id).orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "не найдено")
         );
-        return documentMapper.toDto(documentModel);
     }
 
     @Transactional(readOnly = true)

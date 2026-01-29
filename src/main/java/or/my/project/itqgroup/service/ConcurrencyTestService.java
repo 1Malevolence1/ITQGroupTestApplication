@@ -11,19 +11,40 @@ import or.my.project.itqgroup.dto.response.BatchResponseDto;
 import or.my.project.itqgroup.dto.response.ConcurrencyTestResponse;
 import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.repository.DocumentRepository;
+import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
 public class ConcurrencyTestService {
 
     private final DocumentService documentService;
-    private final DocumentRepository documentRepository;
 
     public ConcurrencyTestResponse runTest(Long documentId, int threads, int attempts) {
         if (documentId == null || threads <= 0 || attempts <= 0) {
-            throw new IllegalArgumentException("Неверные параметры: documentId должен быть указан, threads и attempts > 0");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "documentId должен быть указан, threads и attempts должны быть больше 0"
+            );
+        }
+
+        DocumentModel doc = documentService.getById(documentId);
+
+        if (doc.getStatus() == DocumentStatus.APPROVED) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Документ уже имеет статус APPROVED, повторное утверждение невозможно"
+            );
+        }
+
+        if (doc.getStatus() == DocumentStatus.DRAFT) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Документ имеет статус DRAFT и не может быть утверждён"
+            );
         }
 
         AtomicInteger successCount = new AtomicInteger();
@@ -41,19 +62,14 @@ public class ConcurrencyTestService {
                             "Concurrent test attempt"
                     );
 
-                    List<BatchResponseDto> results = documentService.approveBatch(batchReq);
+                    BatchResponseDto res = documentService.approveBatch(batchReq).get(0);
 
-                    BatchResponseDto res = results.get(0);
-
-                    // Логика обработки уникальности и статуса
                     switch (res.result()) {
                         case SUCCESS -> successCount.incrementAndGet();
-                        case CONFLICT -> conflictCount.incrementAndGet();
+                        case CONFLICT, ALREADY -> conflictCount.incrementAndGet();
                         case ERROR -> errorCount.incrementAndGet();
                     }
-
                 } catch (DataIntegrityViolationException e) {
-                    // Если попытка вставки в реестр упала из-за уникального ключа
                     conflictCount.incrementAndGet();
                 } catch (Exception e) {
                     errorCount.incrementAndGet();
@@ -68,9 +84,7 @@ public class ConcurrencyTestService {
             Thread.currentThread().interrupt();
         }
 
-        // Получаем финальный статус документа
-        DocumentModel finalDoc = documentRepository.findById(documentId)
-                .orElseThrow(() -> new RuntimeException("Document disappeared"));
+        DocumentModel finalDoc = documentService.getById(documentId);
 
         return new ConcurrencyTestResponse(
                 successCount.get(),
