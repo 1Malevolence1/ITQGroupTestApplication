@@ -1,4 +1,4 @@
-package or.my.project.itqgroup.shedule;
+package or.my.project.itqgroup.scheduled;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import or.my.project.itqgroup.dto.request.BatchRequest;
 import or.my.project.itqgroup.dto.response.BatchResponseDto;
 import or.my.project.itqgroup.model.DocumentModel;
-import or.my.project.itqgroup.repository.DocumentRepository;
 import or.my.project.itqgroup.service.DocumentService;
 import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.beans.factory.annotation.Value;
