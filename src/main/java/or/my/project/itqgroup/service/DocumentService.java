@@ -4,17 +4,14 @@ package or.my.project.itqgroup.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import or.my.project.itqgroup.dto.DocumentFilter;
 import or.my.project.itqgroup.dto.request.BatchRequest;
 import or.my.project.itqgroup.dto.request.CreateDocumentRequest;
-import or.my.project.itqgroup.dto.request.DocumentIdsReuqest;
-import or.my.project.itqgroup.dto.response.BatchResponseDto;
-import or.my.project.itqgroup.dto.response.DocumentResponseDto;
-import or.my.project.itqgroup.model.ApprovalRegistryModel;
+import or.my.project.itqgroup.dto.response.BatchResponse;
+import or.my.project.itqgroup.dto.response.DocumentResponse;
 import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.repository.DocumentRepository;
 import or.my.project.itqgroup.repository.specification.DocumentSpecification;
@@ -26,8 +23,6 @@ import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.SliceImpl;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -65,7 +60,7 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public DocumentResponseDto get(Long id) {
+    public DocumentResponse get(Long id) {
         return documentMapper.toDto(getById(id));
     }
 
@@ -76,7 +71,7 @@ public class DocumentService {
     }
 
     @Transactional(readOnly = true)
-    public ApiListResponse<DocumentResponseDto> getAll(DocumentFilter filter, List<Long> ids, int page, int size, CustomSortDescription sortDirection) {
+    public ApiListResponse<DocumentResponse> getAll(DocumentFilter filter, List<Long> ids, int page, int size, CustomSortDescription sortDirection) {
 
 
         Sort sort = sortDirection == CustomSortDescription.ASC ? Sort.by("id").ascending() : Sort.by("id").descending();
@@ -100,8 +95,8 @@ public class DocumentService {
     }
 
     @Transactional
-    public List<BatchResponseDto> submitBatch(BatchRequest request) {
-        List<BatchResponseDto> responses = new ArrayList<>(request.ids().size());
+    public List<BatchResponse> submitBatch(BatchRequest request) {
+        List<BatchResponse> responses = new ArrayList<>(request.ids().size());
 
         List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
         Map<Long, DocumentModel> docMap = docs.stream()
@@ -111,26 +106,26 @@ public class DocumentService {
             DocumentModel doc = docMap.get(id);
 
             if (doc == null) {
-                responses.add(BatchResponseDto.notFound(id));
+                responses.add(BatchResponse.notFound(id));
                 continue;
             }
 
             if (doc.getStatus() == DocumentStatus.SUBMITTED) {
-                responses.add(BatchResponseDto.already(id));
+                responses.add(BatchResponse.already(id));
                 continue;
             }
 
             if (doc.getStatus() != DocumentStatus.DRAFT) {
-                responses.add(BatchResponseDto.conflict(id));
+                responses.add(BatchResponse.conflict(id));
                 continue;
             }
 
             try {
                 doc.setStatus(DocumentStatus.SUBMITTED);
                 historyService.save(doc, request.author(), Action.SUBMIT, request.comment());
-                responses.add(BatchResponseDto.success(id));
+                responses.add(BatchResponse.success(id));
             } catch (RuntimeException e) {
-                responses.add(BatchResponseDto.registryError(id));
+                responses.add(BatchResponse.registryError(id));
             }
         }
 
@@ -139,8 +134,8 @@ public class DocumentService {
 
 
     @Transactional
-    public List<BatchResponseDto> approveBatch(BatchRequest request) {
-        List<BatchResponseDto> responses = new ArrayList<>(request.ids().size());
+    public List<BatchResponse> approveBatch(BatchRequest request) {
+        List<BatchResponse> responses = new ArrayList<>(request.ids().size());
 
         List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
         Map<Long, DocumentModel> docMap = docs.stream()
@@ -150,17 +145,17 @@ public class DocumentService {
             DocumentModel doc = docMap.get(id);
 
             if (doc == null) {
-                responses.add(BatchResponseDto.notFound(id));
+                responses.add(BatchResponse.notFound(id));
                 continue;
             }
 
             if (doc.getStatus() == DocumentStatus.APPROVED) {
-                responses.add(BatchResponseDto.already(id));
+                responses.add(BatchResponse.already(id));
                 continue;
             }
 
             if (doc.getStatus() != DocumentStatus.SUBMITTED) {
-                responses.add(BatchResponseDto.conflict(id));
+                responses.add(BatchResponse.conflict(id));
                 continue;
             }
 
@@ -169,9 +164,9 @@ public class DocumentService {
                 approvalRegistryService.save(doc);
                 doc.setStatus(DocumentStatus.APPROVED);
                 historyService.save(doc, request.author(), Action.APPROVE, request.comment());
-                responses.add(BatchResponseDto.success(id));
+                responses.add(BatchResponse.success(id));
             } catch (RuntimeException e) {
-                responses.add(BatchResponseDto.registryError(id));
+                responses.add(BatchResponse.registryError(id));
                   /* Так как нет возможность задать уточняющие вопросы,
                         то напишу в комментариях. Я понимаю, что если при записи в регистр произошла ошибка,
                         то запись в итсории не появится, а вот что делать, если при сохранении истории

@@ -7,10 +7,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import or.my.project.itqgroup.dto.request.BatchRequest;
-import or.my.project.itqgroup.dto.response.BatchResponseDto;
+import or.my.project.itqgroup.dto.response.BatchResponse;
 import or.my.project.itqgroup.dto.response.ConcurrencyTestResponse;
 import or.my.project.itqgroup.model.DocumentModel;
-import or.my.project.itqgroup.repository.DocumentRepository;
 import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -62,7 +61,7 @@ public class ConcurrencyTestService {
                             "Concurrent test attempt"
                     );
 
-                    BatchResponseDto res = documentService.approveBatch(batchReq).get(0);
+                    BatchResponse res = documentService.approveBatch(batchReq).get(0);
 
                     switch (res.result()) {
                         case SUCCESS -> successCount.incrementAndGet();

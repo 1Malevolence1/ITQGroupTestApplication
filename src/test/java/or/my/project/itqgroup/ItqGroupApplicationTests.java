@@ -3,7 +3,7 @@ package or.my.project.itqgroup;
 
 import java.util.List;
 import or.my.project.itqgroup.dto.request.BatchRequest;
-import or.my.project.itqgroup.dto.response.BatchResponseDto;
+import or.my.project.itqgroup.dto.response.BatchResponse;
 import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.repository.DocumentRepository;
 import or.my.project.itqgroup.service.ApprovalRegistryService;
@@ -55,12 +55,12 @@ class DocumentServiceMockitoTest {
         BatchRequest request = new BatchRequest(List.of(1L), "user", "комментарий");
 
 
-        List<BatchResponseDto> results = documentService.submitBatch(request);
+        List<BatchResponse> results = documentService.submitBatch(request);
 
 
         assertEquals(1, results.size());
         assertEquals(DocumentStatus.SUBMITTED, doc.getStatus());
-        assertEquals(BatchResponseDto.ProcessingResult.SUCCESS, results.get(0).result());
+        assertEquals(BatchResponse.ProcessingResult.SUCCESS, results.get(0).result());
 
         verify(historyService).save(doc, "user", Action.SUBMIT, "комментарий");
         verifyNoMoreInteractions(approvalRegistryService);
@@ -77,11 +77,11 @@ class DocumentServiceMockitoTest {
 
         BatchRequest request = new BatchRequest(List.of(1L), "user", "комментарий");
 
-        List<BatchResponseDto> results = documentService.approveBatch(request);
+        List<BatchResponse> results = documentService.approveBatch(request);
 
         assertEquals(1, results.size());
         assertEquals(DocumentStatus.APPROVED, doc.getStatus());
-        assertEquals(BatchResponseDto.ProcessingResult.SUCCESS, results.get(0).result());
+        assertEquals(BatchResponse.ProcessingResult.SUCCESS, results.get(0).result());
 
         verify(approvalRegistryService).save(doc);
         verify(historyService).save(doc, "user", Action.APPROVE, "комментарий");
@@ -105,16 +105,16 @@ class DocumentServiceMockitoTest {
 
         BatchRequest request = new BatchRequest(List.of(1L, 2L), "user", "комментарий");
 
-        List<BatchResponseDto> results = documentService.approveBatch(request);
+        List<BatchResponse> results = documentService.approveBatch(request);
 
         assertEquals(2, results.size());
 
 
         assertEquals(DocumentStatus.APPROVED, doc1.getStatus());
-        assertEquals(BatchResponseDto.ProcessingResult.SUCCESS, results.get(0).result());
+        assertEquals(BatchResponse.ProcessingResult.SUCCESS, results.get(0).result());
 
 
-        assertEquals(BatchResponseDto.ProcessingResult.REGISTRY_ERROR, results.get(1).result());
+        assertEquals(BatchResponse.ProcessingResult.REGISTRY_ERROR, results.get(1).result());
 
         verify(approvalRegistryService).save(doc1);
         verify(approvalRegistryService).save(doc2);
@@ -139,11 +139,11 @@ class DocumentServiceMockitoTest {
 
         BatchRequest request = new BatchRequest(List.of(1L, 2L, 3L), "user", "комментарий");
 
-        List<BatchResponseDto> results = documentService.submitBatch(request);
+        List<BatchResponse> results = documentService.submitBatch(request);
 
         assertEquals(3, results.size());
-        assertEquals(BatchResponseDto.ProcessingResult.SUCCESS, results.get(0).result());
-        assertEquals(BatchResponseDto.ProcessingResult.ALREADY, results.get(1).result());
-        assertEquals(BatchResponseDto.ProcessingResult.SUCCESS, results.get(2).result());
+        assertEquals(BatchResponse.ProcessingResult.SUCCESS, results.get(0).result());
+        assertEquals(BatchResponse.ProcessingResult.ALREADY, results.get(1).result());
+        assertEquals(BatchResponse.ProcessingResult.SUCCESS, results.get(2).result());
     }
 }

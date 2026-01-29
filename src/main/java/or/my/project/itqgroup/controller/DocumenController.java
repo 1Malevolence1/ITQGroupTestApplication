@@ -8,8 +8,8 @@ import lombok.RequiredArgsConstructor;
 import or.my.project.itqgroup.dto.DocumentFilter;
 import or.my.project.itqgroup.dto.request.BatchRequest;
 import or.my.project.itqgroup.dto.request.CreateDocumentRequest;
-import or.my.project.itqgroup.dto.response.BatchResponseDto;
-import or.my.project.itqgroup.dto.response.DocumentResponseDto;
+import or.my.project.itqgroup.dto.response.BatchResponse;
+import or.my.project.itqgroup.dto.response.DocumentResponse;
 import or.my.project.itqgroup.service.DocumentService;
 import or.my.project.itqgroup.util.ApiListResponse;
 import or.my.project.itqgroup.util.CustomSortDescription;
@@ -38,7 +38,7 @@ public class DocumenController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentResponseDto> get(@PathVariable Long id) {
+    public ResponseEntity<DocumentResponse> get(@PathVariable Long id) {
 
         return ResponseEntity.ok(
                 documentService.get(id)
@@ -47,7 +47,7 @@ public class DocumenController {
 
 
     @GetMapping()
-    public ApiListResponse<DocumentResponseDto> getAll(
+    public ApiListResponse<DocumentResponse> getAll(
             @RequestParam List<Long> ids,
 
             @RequestParam(required = false) String author,
@@ -84,12 +84,12 @@ public class DocumenController {
 
 
     @PostMapping("/submit")
-    public ResponseEntity<List<BatchResponseDto>> submit(@RequestBody BatchRequest request) {
+    public ResponseEntity<List<BatchResponse>> submit(@RequestBody BatchRequest request) {
         return ResponseEntity.ok(documentService.submitBatch(request));
     }
 
     @PostMapping("/approve")
-    public ResponseEntity<List<BatchResponseDto>> approve(@RequestBody BatchRequest request) {
+    public ResponseEntity<List<BatchResponse>> approve(@RequestBody BatchRequest request) {
         return ResponseEntity.ok(documentService.approveBatch(request));
     }
 }

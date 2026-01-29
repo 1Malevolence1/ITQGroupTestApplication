@@ -4,7 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import or.my.project.itqgroup.dto.request.BatchRequest;
-import or.my.project.itqgroup.dto.response.BatchResponseDto;
+import or.my.project.itqgroup.dto.response.BatchResponse;
 import or.my.project.itqgroup.model.DocumentModel;
 import or.my.project.itqgroup.service.DocumentService;
 import or.my.project.itqgroup.util.DocumentStatus;
@@ -44,9 +44,9 @@ public class BackgroundWorkers {
             List<Long> ids = docs.stream().map(DocumentModel::getId).toList();
             log.info("SUBMIT-воркер: загружена пачка документов ({} шт.) для отправки на подачу: {}", totalDocs, ids);
 
-            List<BatchResponseDto> results = documentService.submitBatch(new BatchRequest(ids, "SUBMIT-WORKER", "Автоподача"));
+            List<BatchResponse> results = documentService.submitBatch(new BatchRequest(ids, "SUBMIT-WORKER", "Автоподача"));
 
-            long success = results.stream().filter(r -> r.result() == BatchResponseDto.ProcessingResult.SUCCESS).count();
+            long success = results.stream().filter(r -> r.result() == BatchResponse.ProcessingResult.SUCCESS).count();
             long failed = results.size() - success;
 
             log.info("SUBMIT-воркер: обработана пачка {} → успешно: {}, неудачно: {}, время шага: {} мс",
@@ -77,9 +77,9 @@ public class BackgroundWorkers {
             List<Long> ids = docs.stream().map(DocumentModel::getId).toList();
             log.info("APPROVE-воркер: загружена пачка документов ({} шт.) для отправки на утверждение: {}", totalDocs, ids);
 
-            List<BatchResponseDto> results = documentService.approveBatch(new BatchRequest(ids, "APPROVE-WORKER", "Автоутверждение"));
+            List<BatchResponse> results = documentService.approveBatch(new BatchRequest(ids, "APPROVE-WORKER", "Автоутверждение"));
 
-            long success = results.stream().filter(r -> r.result() == BatchResponseDto.ProcessingResult.SUCCESS).count();
+            long success = results.stream().filter(r -> r.result() == BatchResponse.ProcessingResult.SUCCESS).count();
             long failed = results.size() - success;
 
             log.info("APPROVE-воркер: обработана пачка {} → успешно: {}, неудачно: {}, время шага: {} мс",

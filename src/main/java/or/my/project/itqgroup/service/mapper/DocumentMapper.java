@@ -3,7 +3,7 @@ package or.my.project.itqgroup.service.mapper;
 import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import or.my.project.itqgroup.dto.response.DocumentResponseDto;
+import or.my.project.itqgroup.dto.response.DocumentResponse;
 import or.my.project.itqgroup.model.DocumentModel;
 import org.springframework.stereotype.Component;
 
@@ -13,8 +13,8 @@ public class DocumentMapper {
 
     private final HistoryMapper historyMapper;
 
-    public DocumentResponseDto toDto(DocumentModel model) {
-        return new DocumentResponseDto(
+    public DocumentResponse toDto(DocumentModel model) {
+        return new DocumentResponse(
                 model.getId(),
                 model.getUniqueNumber(),
                 model.getAuthor(),
@@ -26,7 +26,7 @@ public class DocumentMapper {
         );
     }
 
-    public List<DocumentResponseDto> toDtoList(List<DocumentModel> models) {
+    public List<DocumentResponse> toDtoList(List<DocumentModel> models) {
         if (models == null || models.isEmpty()) {
             return Collections.emptyList();
         }

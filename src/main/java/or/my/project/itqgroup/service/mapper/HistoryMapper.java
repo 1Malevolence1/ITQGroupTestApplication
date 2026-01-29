@@ -3,19 +3,19 @@ package or.my.project.itqgroup.service.mapper;
 
 import java.util.Collections;
 import java.util.List;
-import or.my.project.itqgroup.dto.response.HistoryForDocumentResposeDto;
+import or.my.project.itqgroup.dto.response.HistoryForDocumentRespose;
 import or.my.project.itqgroup.model.HistoryModel;
 import org.springframework.stereotype.Component;
 
 @Component
 public class HistoryMapper {
 
-    public HistoryForDocumentResposeDto toDtoForDucument(HistoryModel history) {
+    public HistoryForDocumentRespose toDtoForDucument(HistoryModel history) {
         if (history == null) {
             return null;
         }
 
-        return new HistoryForDocumentResposeDto(
+        return new HistoryForDocumentRespose(
                 history.getId(),
                 history.getAuthor(),
                 history.getTimestamp(),
@@ -24,7 +24,7 @@ public class HistoryMapper {
         );
     }
 
-    public List<HistoryForDocumentResposeDto> toDtoListDtoForDucument(List<HistoryModel> histories) {
+    public List<HistoryForDocumentRespose> toDtoListDtoForDucument(List<HistoryModel> histories) {
         if (histories == null || histories.isEmpty()) {
             return Collections.emptyList();
         }
