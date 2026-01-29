@@ -30,7 +30,7 @@ public class ApprovalRegistryModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne()
     @JoinColumn(name = "document_id", nullable = false, unique = true)
     private DocumentModel document;
 

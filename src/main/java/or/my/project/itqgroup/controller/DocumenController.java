@@ -6,9 +6,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import or.my.project.itqgroup.dto.DocumentFilter;
+import or.my.project.itqgroup.dto.request.BatchRequest;
 import or.my.project.itqgroup.dto.request.CreateDocumentRequest;
-import or.my.project.itqgroup.dto.request.DocumentIdsReuqest;
-import or.my.project.itqgroup.dto.response.DocumentDtoResponse;
+import or.my.project.itqgroup.dto.response.BatchResponseDto;
+import or.my.project.itqgroup.dto.response.DocumentResponseDto;
 import or.my.project.itqgroup.service.DocumentService;
 import or.my.project.itqgroup.util.ApiListResponse;
 import or.my.project.itqgroup.util.CustomSortDescription;
@@ -37,7 +38,7 @@ public class DocumenController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DocumentDtoResponse> get(@PathVariable Long id) {
+    public ResponseEntity<DocumentResponseDto> get(@PathVariable Long id) {
 
         return ResponseEntity.ok(
                 documentService.get(id)
@@ -45,7 +46,7 @@ public class DocumenController {
     }
 
     @GetMapping()
-    public ApiListResponse<DocumentDtoResponse> getAll(
+    public ApiListResponse<DocumentResponseDto> getAll(
             @RequestParam List<Long> ids,
 
             @RequestParam(required = false) String author,
@@ -78,6 +79,12 @@ public class DocumenController {
                 size,
                 sort
         );
+    }
+
+
+    @PostMapping("/submit")
+    public List<BatchResponseDto> submit(@RequestBody BatchRequest request) {
+        return documentService.submitBatch(request);
     }
 
 }

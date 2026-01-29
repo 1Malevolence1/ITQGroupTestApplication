@@ -1,6 +1,8 @@
 package or.my.project.itqgroup.repository;
 
+import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import or.my.project.itqgroup.model.DocumentModel;
@@ -9,18 +11,21 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, JpaSpecificationExecutor<DocumentModel> {
 
-  //  @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT d FROM DocumentModel d WHERE d.id = :id")
-    Optional<DocumentModel> findByIdWithLock(Long id);
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("""
+       SELECT DISTINCT d
+       FROM DocumentModel d
+       LEFT JOIN FETCH d.histories h
+       WHERE d.id IN :ids
+       """)
+  List<DocumentModel> findAllByIdWithLock(@Param("ids") Collection<Long> ids);
 
-  Page<DocumentModel> findByIdIn(List<Long> ids, Pageable pageable);
-
-  Page<DocumentModel> findByAuthorAndStatusAndCreatedAtBetween(String author, DocumentStatus status, LocalDateTime from, LocalDateTime to, Pageable pageable);
-    // Additional search methods as needed
 }

@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import or.my.project.itqgroup.util.DocumentStatus;
 
-public record DocumentDtoResponse(
+public record DocumentResponseDto(
         Long id,
         String uniqueNumber,
         String author,
@@ -12,6 +12,6 @@ public record DocumentDtoResponse(
         DocumentStatus status,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        List<HistoryforDocumentResposeDto> history
+        List<HistoryForDocumentResposeDto> history
 ) {
 }

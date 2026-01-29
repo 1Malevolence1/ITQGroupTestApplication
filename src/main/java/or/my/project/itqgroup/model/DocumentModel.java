@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -62,6 +63,4 @@ public class DocumentModel {
     @Builder.Default
     private List<HistoryModel> histories = new ArrayList<>();
 
-    @OneToOne(mappedBy = "document")
-    private ApprovalRegistryModel approvalRegistry;
 }
