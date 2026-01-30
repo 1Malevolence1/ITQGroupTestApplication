@@ -41,7 +41,7 @@ public class DocumentService {
     private final DocumentMapper documentMapper;
 
 
-    // Я думаю, что можно было бы сделать ещё через Slice. Может это было бы правильнее
+
     public List<DocumentModel> fetchBatch(DocumentStatus status, PageRequest pageRequest) {
         return documentRepository.findByStatus(status, pageRequest);
     }
@@ -96,9 +96,13 @@ public class DocumentService {
 
     @Transactional
     public List<BatchResponse> submitBatch(BatchRequest request) {
-        List<BatchResponse> responses = new ArrayList<>(request.ids().size());
 
-        List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
+        List<BatchResponse> responses = new ArrayList<>(request.ids().size());
+        List<Long> successIds = new ArrayList<>();
+
+        List<DocumentModel> docs =
+                documentRepository.findAllByIdWithLock(request.ids());
+
         Map<Long, DocumentModel> docMap = docs.stream()
                 .collect(Collectors.toMap(DocumentModel::getId, d -> d));
 
@@ -121,12 +125,22 @@ public class DocumentService {
             }
 
             try {
-                doc.setStatus(DocumentStatus.SUBMITTED);
+
                 historyService.save(doc, request.author(), Action.SUBMIT, request.comment());
+                successIds.add(id);
                 responses.add(BatchResponse.success(id));
+
             } catch (RuntimeException e) {
                 responses.add(BatchResponse.registryError(id));
             }
+        }
+
+
+        if (!successIds.isEmpty()) {
+            documentRepository.updateStatusBatch(
+                    successIds,
+                    DocumentStatus.SUBMITTED
+            );
         }
 
         return responses;
@@ -135,8 +149,11 @@ public class DocumentService {
 
     @Transactional
     public List<BatchResponse> approveBatch(BatchRequest request) {
-        List<BatchResponse> responses = new ArrayList<>(request.ids().size());
 
+        List<BatchResponse> responses = new ArrayList<>(request.ids().size());
+        List<Long> approvedIds = new ArrayList<>();
+
+        // 1️⃣ Загружаем документы с FOR UPDATE
         List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
         Map<Long, DocumentModel> docMap = docs.stream()
                 .collect(Collectors.toMap(DocumentModel::getId, d -> d));
@@ -162,12 +179,14 @@ public class DocumentService {
             try {
 
                 approvalRegistryService.save(doc);
-                doc.setStatus(DocumentStatus.APPROVED);
                 historyService.save(doc, request.author(), Action.APPROVE, request.comment());
+
+                approvedIds.add(id);
                 responses.add(BatchResponse.success(id));
+
             } catch (RuntimeException e) {
                 responses.add(BatchResponse.registryError(id));
-                  /* Так как нет возможность задать уточняющие вопросы,
+                   /* Так как нет возможность задать уточняющие вопросы,
                         то напишу в комментариях. Я понимаю, что если при записи в регистр произошла ошибка,
                         то запись в итсории не появится, а вот что делать, если при сохранении истории
                          появится ошибка- в тз не указано.
@@ -176,8 +195,12 @@ public class DocumentService {
             }
         }
 
+
+        if (!approvedIds.isEmpty()) {
+            documentRepository.updateStatusBatch(approvedIds, DocumentStatus.APPROVED);
+        }
+
         return responses;
     }
-
 }
 

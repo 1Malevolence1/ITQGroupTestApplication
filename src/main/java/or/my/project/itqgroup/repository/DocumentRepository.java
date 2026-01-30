@@ -13,6 +13,7 @@ import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -38,5 +39,14 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, 
        """)
   List<DocumentModel> findByStatus(@Param("status") DocumentStatus status, Pageable pageable);
 
-
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("""
+    UPDATE DocumentModel d
+    SET d.status = :newStatus
+    WHERE d.id IN :ids
+""")
+  int updateStatusBatch(
+          @Param("ids") List<Long> ids,
+          @Param("newStatus") DocumentStatus newStatus
+  );
 }
