@@ -34,6 +34,7 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, 
   @Query("""
    SELECT d
    FROM DocumentModel d
+  
    WHERE d.status = :status
    ORDER BY d.id
 """)
@@ -49,4 +50,6 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, 
           @Param("ids") List<Long> ids,
           @Param("newStatus") DocumentStatus newStatus
   );
+
+  long countByStatus(DocumentStatus status);
 }

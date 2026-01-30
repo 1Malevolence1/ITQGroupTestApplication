@@ -28,50 +28,68 @@ public class BackgroundWorkers {
     @Value("${app.workers.enabled}")
     private boolean workersEnabled;
 
-    @Scheduled(fixedRateString = "${app.workers.submit-interval-ms}")
+    @Scheduled(fixedDelayString = "${app.workers.submit-interval-ms:5000}")
     public void submitWorker() {
         if (!workersEnabled) return;
 
         long startTotal = System.currentTimeMillis();
+
+        long totalToProcess = documentService.countByStatus(DocumentStatus.DRAFT);
+        long processed = 0;
+
+        log.info("SUBMIT-воркер: старт фоновой обработки документов. Всего DRAFT документов: {}", totalToProcess);
+
         Pageable pageable = PageRequest.of(0, batchSize);
-
-        log.info("SUBMIT-воркер: старт фоновой обработки документов");
-
         Slice<DocumentModel> slice;
+
         do {
+            long stepStart = System.currentTimeMillis();
+
             slice = documentService.fetchSlice(DocumentStatus.DRAFT, pageable);
             List<DocumentModel> docs = slice.getContent();
 
             if (docs.isEmpty()) break;
 
             List<Long> ids = docs.stream().map(DocumentModel::getId).toList();
-            log.info("SUBMIT-воркер: загружена пачка документов ({} шт.) для отправки: {}", ids.size(), ids);
+            log.info("SUBMIT-воркер: загружена пачка документов ({} шт.) для отправки на подачу: {}", ids.size(), ids);
 
             List<BatchResponse> results = documentService.submitBatch(new BatchRequest(ids, "SUBMIT-WORKER", "Автоподача"));
 
             long success = results.stream().filter(r -> r.result() == BatchResponse.ProcessingResult.SUCCESS).count();
             long failed = results.size() - success;
 
-            log.info("SUBMIT-воркер: обработана пачка {} → успешно: {}, неудачно: {}, время шага: {} мс",
-                    ids.size(), success, failed, System.currentTimeMillis() - startTotal);
+            processed += docs.size();
+
+            log.info(
+                    "SUBMIT-воркер: обработана пачка {} → успешно: {}, неудачно: {}, время шага: {} мс, прогресс: {}/{}",
+                    ids.size(), success, failed, System.currentTimeMillis() - stepStart, processed, totalToProcess
+            );
 
             pageable = slice.nextPageable();
         } while (slice.hasNext());
 
-        log.info("SUBMIT-воркер: завершена фонова обработка документов, общее время: {} мс", System.currentTimeMillis() - startTotal);
+        log.info("SUBMIT-воркер: завершена фонова обработка документов, общее время: {} мс, всего обработано: {}",
+                System.currentTimeMillis() - startTotal, processed);
     }
 
-    @Scheduled(fixedRateString = "${app.workers.approve-interval-ms:5000}")
+
+    @Scheduled(fixedDelayString = "${app.workers.approve-interval-ms:5000}")
     public void approveWorker() {
         if (!workersEnabled) return;
 
         long startTotal = System.currentTimeMillis();
+
+        long totalToProcess = documentService.countByStatus(DocumentStatus.SUBMITTED);
+        long processed = 0;
+
+        log.info("APPROVE-воркер: старт фоновой обработки документов. Всего SUBMITTED документов: {}", totalToProcess);
+
         Pageable pageable = PageRequest.of(0, batchSize);
-
-        log.info("APPROVE-воркер: старт фоновой обработки документов");
-
         Slice<DocumentModel> slice;
+
         do {
+            long stepStart = System.currentTimeMillis();
+
             slice = documentService.fetchSlice(DocumentStatus.SUBMITTED, pageable);
             List<DocumentModel> docs = slice.getContent();
 
@@ -85,13 +103,18 @@ public class BackgroundWorkers {
             long success = results.stream().filter(r -> r.result() == BatchResponse.ProcessingResult.SUCCESS).count();
             long failed = results.size() - success;
 
-            log.info("APPROVE-воркер: обработана пачка {} → успешно: {}, неудачно: {}, время шага: {} мс",
-                    ids.size(), success, failed, System.currentTimeMillis() - startTotal);
+            processed += docs.size();
+
+            log.info(
+                    "APPROVE-воркер: обработана пачка {} → успешно: {}, неудачно: {}, время шага: {} мс, прогресс: {}/{}",
+                    ids.size(), success, failed, System.currentTimeMillis() - stepStart, processed, totalToProcess
+            );
 
             pageable = slice.nextPageable();
         } while (slice.hasNext());
 
-        log.info("APPROVE-воркер: завершена фонова обработка документов, общее время: {} мс", System.currentTimeMillis() - startTotal);
+        log.info("APPROVE-воркер: завершена фонова обработка документов, общее время: {} мс, всего обработано: {}",
+                System.currentTimeMillis() - startTotal, processed);
     }
 }
 

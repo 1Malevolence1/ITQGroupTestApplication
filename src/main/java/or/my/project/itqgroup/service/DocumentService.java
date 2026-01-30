@@ -47,6 +47,10 @@ public class DocumentService {
         return documentRepository.findByStatusSlice(status, pageable);
     }
 
+    public long countByStatus(DocumentStatus status) {
+        return documentRepository.countByStatus(status);
+    }
+
 
     @Transactional
     public void create(CreateDocumentRequest request) {
