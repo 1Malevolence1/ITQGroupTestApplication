@@ -153,7 +153,7 @@ public class DocumentService {
         List<BatchResponse> responses = new ArrayList<>(request.ids().size());
         List<Long> approvedIds = new ArrayList<>();
 
-        // 1️⃣ Загружаем документы с FOR UPDATE
+
         List<DocumentModel> docs = documentRepository.findAllByIdWithLock(request.ids());
         Map<Long, DocumentModel> docMap = docs.stream()
                 .collect(Collectors.toMap(DocumentModel::getId, d -> d));
