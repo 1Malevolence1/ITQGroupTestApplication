@@ -32,12 +32,12 @@ public interface DocumentRepository extends JpaRepository<DocumentModel, Long>, 
 
 
   @Query("""
-       SELECT d
-       FROM DocumentModel d
-       WHERE d.status = :status
-       ORDER BY d.id
-       """)
-  List<DocumentModel> findByStatus(@Param("status") DocumentStatus status, Pageable pageable);
+   SELECT d
+   FROM DocumentModel d
+   WHERE d.status = :status
+   ORDER BY d.id
+""")
+  Slice<DocumentModel> findByStatusSlice(@Param("status") DocumentStatus status, Pageable pageable);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""

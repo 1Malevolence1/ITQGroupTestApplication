@@ -23,6 +23,7 @@ import or.my.project.itqgroup.util.DocumentStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -42,8 +43,8 @@ public class DocumentService {
 
 
 
-    public List<DocumentModel> fetchBatch(DocumentStatus status, PageRequest pageRequest) {
-        return documentRepository.findByStatus(status, pageRequest);
+    public Slice<DocumentModel> fetchSlice(DocumentStatus status, Pageable pageable) {
+        return documentRepository.findByStatusSlice(status, pageable);
     }
 
 
