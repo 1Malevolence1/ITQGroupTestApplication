@@ -94,6 +94,8 @@ public class DocumentService {
         return new ApiListResponse<>(documentMapper.toDtoList(documentPage.getContent()), documentPage.getTotalElements());
     }
 
+    // Я бы сюда добавил логику, чтобы историю сохранялась одним запросом в базу данных
+    // Но тут нужно продумать логику на случай, если во время записи в бд возникнет ошибка
     @Transactional
     public List<BatchResponse> submitBatch(BatchRequest request) {
 
@@ -125,14 +127,13 @@ public class DocumentService {
             }
 
             try {
-
                 historyService.save(doc, request.author(), Action.SUBMIT, request.comment());
-                successIds.add(id);
-                responses.add(BatchResponse.success(id));
-
             } catch (RuntimeException e) {
-                responses.add(BatchResponse.registryError(id));
+                log.error("Не удалось сохранить историю для документа id={} : {}", doc.getId(), e.getMessage(), e);
             }
+
+            successIds.add(id);
+            responses.add(BatchResponse.success(id));
         }
 
 
@@ -142,11 +143,12 @@ public class DocumentService {
                     DocumentStatus.SUBMITTED
             );
         }
-
         return responses;
     }
 
-
+    // Я бы сюда добавил логику, чтобы историю сохранялась одним запросом в базу данных
+    // Но тут нужно продумать логику на случай, если во время записи в бд возникнет ошибка
+    // С утвержденим документа аналогично
     @Transactional
     public List<BatchResponse> approveBatch(BatchRequest request) {
 
@@ -179,8 +181,6 @@ public class DocumentService {
             try {
 
                 approvalRegistryService.save(doc);
-                historyService.save(doc, request.author(), Action.APPROVE, request.comment());
-
                 approvedIds.add(id);
                 responses.add(BatchResponse.success(id));
 
@@ -193,13 +193,13 @@ public class DocumentService {
                          Тут, конечно, можно было добавить логику, которая бы чистила историю и утверждённые документы
                          */
             }
+            historyService.save(doc, request.author(), Action.APPROVE, request.comment());
         }
 
 
         if (!approvedIds.isEmpty()) {
             documentRepository.updateStatusBatch(approvedIds, DocumentStatus.APPROVED);
         }
-
         return responses;
     }
 }
